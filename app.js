@@ -76,6 +76,92 @@ function getSubjectColorClass(subject) {
   return "detail-symbol-vocabulary";
 }
 
+function slugify(text) {
+  return String(text ?? "")
+    .toLowerCase()
+    .trim()
+    .replaceAll("'", "")
+    .replaceAll("’", "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function getImagePath(subject, type) {
+  const level = subject.data.level;
+  const meaningSlug = slugify(getMeaning(subject));
+  return `assets/images/kanji/${level}/${meaningSlug}-${type}.webp`;
+}
+
+function renderImageSlot(subject, type, label) {
+  const imagePath = getImagePath(subject, type);
+
+  return `
+    <figure class="image-slot image-mode-contain">
+      <img
+        src="${imagePath}"
+        alt="${escapeHtml(label)} image for ${escapeHtml(getMeaning(subject))}"
+        loading="lazy"
+        onclick="openImageLightbox('${imagePath}', '${escapeHtml(label)} image for ${escapeHtml(getMeaning(subject))}')"
+        onerror="this.parentElement.classList.add('image-missing'); this.remove();"
+      />
+      <div class="image-fallback">
+        Missing ${escapeHtml(label)} image<br />
+        Add image here:<br />
+        <code>${escapeHtml(imagePath)}</code>
+      </div>
+    </figure>
+  `;
+}
+
+function ensureImageLightbox() {
+  let lightbox = document.getElementById("imageLightbox");
+
+  if (lightbox) return lightbox;
+
+  lightbox = document.createElement("div");
+  lightbox.id = "imageLightbox";
+  lightbox.className = "image-lightbox";
+  lightbox.innerHTML = `
+    <button class="image-lightbox-close" aria-label="Close image">×</button>
+    <img id="imageLightboxImage" alt="" />
+  `;
+
+  lightbox.addEventListener("click", event => {
+    if (
+      event.target.id === "imageLightbox" ||
+      event.target.classList.contains("image-lightbox-close") ||
+      event.target.id === "imageLightboxImage"
+    ) {
+      closeImageLightbox();
+    }
+  });
+
+  document.body.appendChild(lightbox);
+  return lightbox;
+}
+
+function openImageLightbox(imagePath, altText) {
+  const lightbox = ensureImageLightbox();
+  const image = document.getElementById("imageLightboxImage");
+
+  image.src = imagePath;
+  image.alt = altText;
+  lightbox.classList.add("is-open");
+  document.body.classList.add("lightbox-open");
+}
+
+function closeImageLightbox() {
+  const lightbox = document.getElementById("imageLightbox");
+  const image = document.getElementById("imageLightboxImage");
+
+  if (!lightbox || !image) return;
+
+  lightbox.classList.remove("is-open");
+  document.body.classList.remove("lightbox-open");
+  image.src = "";
+  image.alt = "";
+}
+
 function escapeHtml(text) {
   return String(text ?? "")
     .replaceAll("&", "&amp;")
@@ -166,9 +252,7 @@ function showDetail(subjectId) {
         <p>${renderWaniKaniText(subject.data.meaning_hint ?? "No meaning hint available yet.")}</p>
       </div>
 
-      <div class="image-placeholder">
-        Meaning image placeholder
-      </div>
+      ${renderImageSlot(subject, "meaning", "Meaning mnemonic")}
     </section>
 
     <section id="readingsSection" class="section-card">
@@ -202,9 +286,7 @@ function showDetail(subjectId) {
         <p>${renderWaniKaniText(subject.data.reading_hint ?? "No reading hint available yet.")}</p>
       </div>
 
-      <div id="imagesSection" class="image-placeholder">
-        Reading image placeholder
-      </div>
+      <div id="imagesSection">${renderImageSlot(subject, "reading", "Reading mnemonic")}</div>
     </section>
 
     <section id="similarKanjiSection" class="section-card">
@@ -278,5 +360,11 @@ document.getElementById("langToggle").addEventListener("click", () => {
 });
 
 document.getElementById("backButton").addEventListener("click", showList);
+
+document.addEventListener("keydown", event => {
+  if (event.key === "Escape") {
+    closeImageLightbox();
+  }
+});
 
 loadData();
