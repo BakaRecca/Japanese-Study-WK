@@ -89,7 +89,7 @@ function slugify(text) {
 function getImagePath(subject, type) {
   const level = subject.data.level;
   const meaningSlug = slugify(getMeaning(subject));
-  return `assets/images/kanji/${level}/${meaningSlug}-${type}.webp`;
+  return `assets/images/${currentLang}/kanji/${level}/${meaningSlug}-${type}.webp`;
 }
 
 function renderImageSlot(subject, type, label) {
