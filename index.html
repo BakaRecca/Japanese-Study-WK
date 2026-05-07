@@ -3,25 +3,31 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>WaniKani Study</title>
+  <title>Japanese Study WK</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
-    <h1>WaniKani Study</h1>
+    <h1>Japanese Study WK</h1>
     <button id="langToggle">EN / SV</button>
   </header>
 
   <main>
     <section class="controls">
       <input id="search" placeholder="Sök kanji, meaning, reading..." />
-      <select id="levelSelect">
-        <option value="41">Level 41</option>
-      </select>
+      <select id="levelSelect"></select>
     </section>
 
     <section id="stats"></section>
-    <section id="cards" class="cards"></section>
+
+    <section id="listView">
+      <section id="cards" class="cards"></section>
+    </section>
+
+    <section id="detailView" class="hidden">
+      <button id="backButton">← Tillbaka</button>
+      <article id="kanjiDetail" class="detail-card"></article>
+    </section>
   </main>
 
   <script src="app.js"></script>
