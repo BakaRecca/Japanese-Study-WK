@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WaniKani Study</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>WaniKani Study</h1>
+    <button id="langToggle">EN / SV</button>
+  </header>
+
+  <main>
+    <section class="controls">
+      <input id="search" placeholder="Sök kanji, meaning, reading..." />
+      <select id="levelSelect">
+        <option value="41">Level 41</option>
+      </select>
+    </section>
+
+    <section id="stats"></section>
+    <section id="cards" class="cards"></section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
