@@ -4,6 +4,8 @@ const MAX_LEVEL = 60;
 
 let subjects = [];
 let currentLang = "en";
+let currentSubjectId = null;
+let touchStartX = 0;
 
 async function loadData() {
   const response = await fetch("data/wanikani-subjects.json");
@@ -74,6 +76,86 @@ function getSubjectColorClass(subject) {
   if (subject.object === "radical") return "detail-symbol-radical";
   if (subject.object === "kanji") return "detail-symbol-kanji";
   return "detail-symbol-vocabulary";
+}
+
+function getCurrentKanjiList() {
+  const search = document.getElementById("search").value.toLowerCase();
+  const level = Number(document.getElementById("levelSelect").value);
+
+  const kanji = subjects.filter(s =>
+    s.object === "kanji" &&
+    s.data.level === level &&
+    s.data.hidden_at === null
+  );
+
+  return kanji.filter(s => {
+    const text = [
+      s.data.characters,
+      getMeaning(s),
+      getReadings(s)
+    ].join(" ").toLowerCase();
+
+    return text.includes(search);
+  });
+}
+
+function getAdjacentKanji(subjectId) {
+  const kanjiList = getCurrentKanjiList();
+  const currentIndex = kanjiList.findIndex(s => s.id === subjectId);
+
+  return {
+    previous: currentIndex > 0 ? kanjiList[currentIndex - 1] : null,
+    next: currentIndex >= 0 && currentIndex < kanjiList.length - 1 ? kanjiList[currentIndex + 1] : null,
+    currentIndex,
+    total: kanjiList.length
+  };
+}
+
+function navigateKanji(direction) {
+  if (!currentSubjectId) return;
+
+  const adjacent = getAdjacentKanji(currentSubjectId);
+  const target = direction < 0 ? adjacent.previous : adjacent.next;
+
+  if (target) {
+    showDetail(target.id);
+  }
+}
+
+function getRadicalComponents(subject) {
+  const componentIds = subject.data.component_subject_ids ?? [];
+
+  return componentIds
+    .map(id => subjects.find(s => s.id === id))
+    .filter(component => component && component.object === "radical");
+}
+
+function renderRadicalComponents(subject) {
+  const radicals = getRadicalComponents(subject);
+
+  if (radicals.length === 0) {
+    return "";
+  }
+
+  return `
+    <section id="radicalsSection" class="section-card">
+      <h2 class="section-title">Radical Combination</h2>
+      <div class="divider"></div>
+
+      <div class="radical-components">
+        ${radicals.map(radical => `
+          <article class="radical-chip">
+            <div class="radical-symbol">
+              ${escapeHtml(radical.data.characters ?? "?")}
+            </div>
+            <div class="radical-name">
+              ${escapeHtml(getMeaning(radical))}
+            </div>
+          </article>
+        `).join("")}
+      </div>
+    </section>
+  `;
 }
 
 function slugify(text) {
@@ -184,6 +266,7 @@ function renderWaniKaniText(text) {
 }
 
 function showList() {
+  currentSubjectId = null;
   document.querySelector(".controls").classList.remove("hidden");
   document.getElementById("stats").classList.remove("hidden");
   document.getElementById("listView").classList.remove("hidden");
@@ -194,11 +277,14 @@ function showDetail(subjectId) {
   const subject = subjects.find(s => s.id === subjectId);
   if (!subject) return;
 
+  currentSubjectId = subjectId;
+
   const primaryMeanings = getPrimaryMeanings(subject);
   const alternativeMeanings = getAlternativeMeanings(subject);
   const onyomi = getReadingsByType(subject, "onyomi");
   const kunyomi = getReadingsByType(subject, "kunyomi");
   const nanori = getReadingsByType(subject, "nanori");
+  const adjacent = getAdjacentKanji(subject.id);
 
   document.querySelector(".controls").classList.add("hidden");
   document.getElementById("stats").classList.add("hidden");
@@ -218,13 +304,30 @@ function showDetail(subjectId) {
       </div>
     </div>
 
+    <div class="kanji-switcher">
+      <button class="kanji-switcher-button" onclick="navigateKanji(-1)" ${adjacent.previous ? "" : "disabled"}>
+        ‹ ${adjacent.previous ? escapeHtml(adjacent.previous.data.characters) : ""}
+      </button>
+
+      <span class="kanji-switcher-status">
+        ${adjacent.currentIndex + 1} / ${adjacent.total}
+      </span>
+
+      <button class="kanji-switcher-button" onclick="navigateKanji(1)" ${adjacent.next ? "" : "disabled"}>
+        ${adjacent.next ? escapeHtml(adjacent.next.data.characters) : ""} ›
+      </button>
+    </div>
+
     <div class="detail-navigation">
+      <button onclick="scrollToDetailSection('radicalsSection')">Radicals</button>
       <button onclick="scrollToDetailSection('meaningSection')">Meaning</button>
       <button onclick="scrollToDetailSection('readingsSection')">Readings</button>
       <button onclick="scrollToDetailSection('similarKanjiSection')">Similar Kanji</button>
       <button onclick="scrollToDetailSection('foundVocabularySection')">Found In Vocabulary</button>
       <button onclick="scrollToDetailSection('imagesSection')">Images</button>
     </div>
+
+    ${renderRadicalComponents(subject)}
 
     <section id="meaningSection" class="section-card">
       <h2 class="section-title">Meaning</h2>
@@ -364,6 +467,31 @@ document.getElementById("backButton").addEventListener("click", showList);
 document.addEventListener("keydown", event => {
   if (event.key === "Escape") {
     closeImageLightbox();
+  }
+});
+
+
+document.addEventListener("touchstart", event => {
+  touchStartX = event.changedTouches[0].screenX;
+});
+
+document.addEventListener("touchend", event => {
+  const detailView = document.getElementById("detailView");
+  const lightbox = document.getElementById("imageLightbox");
+
+  if (detailView.classList.contains("hidden")) return;
+  if (lightbox?.classList.contains("is-open")) return;
+
+  const touchEndX = event.changedTouches[0].screenX;
+  const swipeDistance = touchEndX - touchStartX;
+  const minimumSwipeDistance = 60;
+
+  if (swipeDistance > minimumSwipeDistance) {
+    navigateKanji(-1);
+  }
+
+  if (swipeDistance < -minimumSwipeDistance) {
+    navigateKanji(1);
   }
 });
 
