@@ -158,6 +158,43 @@ function renderRadicalComponents(subject) {
   `;
 }
 
+function getPrimaryReadings(subject) {
+  return subject.data.readings
+    ?.filter(reading => reading.primary)
+    .map(reading => reading.reading) ?? [];
+}
+
+function renderStudyHeader(subject) {
+  const radicals = getRadicalComponents(subject);
+  const primaryReadings = getPrimaryReadings(subject);
+
+  return `
+    <div class="study-header">
+      <div class="study-header-kanji ${getSubjectColorClass(subject)}">
+        ${escapeHtml(subject.data.characters)}
+      </div>
+
+      <div class="study-header-main">
+        <div class="study-header-meaning">${escapeHtml(getMeaning(subject))}</div>
+        <div class="study-header-reading">${primaryReadings.length ? primaryReadings.map(escapeHtml).join(", ") : "No primary reading"}</div>
+      </div>
+
+      <div class="study-header-radicals" aria-label="Radicals">
+        ${radicals.map(radical => `
+          <div class="study-header-radical-chip" title="${escapeHtml(getMeaning(radical))}">
+            <span class="study-header-radical-symbol">
+              ${escapeHtml(radical.data.characters ?? "?")}
+            </span>
+            <span class="study-header-radical-name">
+              ${escapeHtml(getMeaning(radical))}
+            </span>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
 function slugify(text) {
   return String(text ?? "")
     .toLowerCase()
@@ -303,6 +340,8 @@ function showDetail(subjectId) {
         <p>Level ${subject.data.level} · ${escapeHtml(subject.object)}</p>
       </div>
     </div>
+
+    ${renderStudyHeader(subject)}
 
     <div class="kanji-switcher">
       <button class="kanji-switcher-button" onclick="navigateKanji(-1)" ${adjacent.previous ? "" : "disabled"}>
@@ -459,6 +498,12 @@ document.getElementById("levelSelect").addEventListener("change", render);
 
 document.getElementById("langToggle").addEventListener("click", () => {
   currentLang = currentLang === "en" ? "sv" : "en";
+
+  if (currentSubjectId) {
+    showDetail(currentSubjectId);
+    return;
+  }
+
   render();
 });
 
