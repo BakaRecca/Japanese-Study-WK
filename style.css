@@ -772,3 +772,28 @@ input, select, button {
   line-height: 1.2;
   text-align: center;
 }
+
+.meaning-reading-layout {
+  display: grid;
+  gap: 2rem;
+}
+
+@media (min-width: 1100px) and (orientation: landscape) {
+  .detail-card {
+    max-width: 1280px;
+  }
+
+  .meaning-reading-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .meaning-reading-layout .section-card {
+    margin-top: 2rem;
+    height: fit-content;
+  }
+
+  .meaning-reading-layout .image-slot img {
+    max-height: min(58vh, 620px);
+  }
+}

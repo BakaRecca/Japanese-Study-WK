@@ -474,9 +474,10 @@ function showDetail(subjectId, options = {}) {
 
     ${renderRadicalComponents(subject)}
 
-    <section id="meaningSection" class="section-card">
-      <h2 class="section-title">Meaning</h2>
-      <div class="divider"></div>
+    <div class="meaning-reading-layout">
+      <section id="meaningSection" class="section-card">
+        <h2 class="section-title">Meaning</h2>
+        <div class="divider"></div>
 
       <div class="info-grid">
         <div class="info-box">
@@ -500,12 +501,12 @@ function showDetail(subjectId, options = {}) {
         <p>${renderWaniKaniText(subject.data.meaning_hint ?? "No meaning hint available yet.")}</p>
       </div>
 
-      ${renderImageSlot(subject, "meaning", "Meaning mnemonic")}
-    </section>
+        ${renderImageSlot(subject, "meaning", "Meaning mnemonic")}
+      </section>
 
-    <section id="readingSection" class="section-card">
-      <h2 class="section-title">Reading</h2>
-      <div class="divider"></div>
+      <section id="readingSection" class="section-card">
+        <h2 class="section-title">Reading</h2>
+        <div class="divider"></div>
 
       <div class="info-grid">
         <div class="info-box">
@@ -534,8 +535,9 @@ function showDetail(subjectId, options = {}) {
         <p>${renderWaniKaniText(subject.data.reading_hint ?? "No reading hint available yet.")}</p>
       </div>
 
-      <div id="imagesSection">${renderImageSlot(subject, "reading", "Reading mnemonic")}</div>
-    </section>
+        <div id="imagesSection">${renderImageSlot(subject, "reading", "Reading mnemonic")}</div>
+      </section>
+    </div>
 
     <section id="similarKanjiSection" class="section-card">
       <h2 class="section-title">Visually Similar Kanji</h2>
