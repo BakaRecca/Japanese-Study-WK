@@ -22,6 +22,8 @@ let showOnyomiAsKatakana = true;
 const SETTINGS_KEYS = {
   level: "wk-study-current-level",
   onyomiAsKatakana: "wk-study-onyomi-as-katakana",
+  kanjiCardColumns: "wk-study-kanji-card-columns",
+  kanjiCardRows: "wk-study-kanji-card-rows",
   lastSubjectId: "wk-study-last-subject-id",
   lastView: "wk-study-last-view"
 };
@@ -33,6 +35,7 @@ async function loadData() {
   const json = await response.json();
   subjects = json.subjects ?? json;
   loadSettings();
+  applySavedLayoutSettings();
   setupMobileMenu();
   setupHeaderNavigation();
   setupLevelSelect();
@@ -124,11 +127,16 @@ function closeMobileMenu() {
   const overlay = document.getElementById("mobileMenuOverlay");
   const button = document.getElementById("mobileMenuButton");
 
-  if (!overlay || !button) return;
+  if (!overlay || !button || overlay.classList.contains("hidden")) return;
 
-  overlay.classList.add("hidden");
-  document.body.classList.remove("mobile-menu-open");
+  overlay.classList.add("is-closing");
   button.setAttribute("aria-expanded", "false");
+
+  window.setTimeout(() => {
+    overlay.classList.add("hidden");
+    overlay.classList.remove("is-closing");
+    document.body.classList.remove("mobile-menu-open");
+  }, 180);
 }
 
 function renderMobileMenu() {
@@ -182,7 +190,20 @@ function renderMobileMenu() {
 }
 
 function toggleMobileMenuSection(sectionId) {
-  document.getElementById(sectionId)?.classList.toggle("hidden");
+  const section = document.getElementById(sectionId);
+  if (!section) return;
+
+  if (section.classList.contains("hidden")) {
+    section.classList.remove("hidden", "is-closing");
+    return;
+  }
+
+  section.classList.add("is-closing");
+
+  window.setTimeout(() => {
+    section.classList.add("hidden");
+    section.classList.remove("is-closing");
+  }, 140);
 }
 
 function selectLevelFromMobileMenu(level) {
@@ -210,6 +231,43 @@ function loadSettings() {
   if (savedKatakanaSetting !== null) {
     showOnyomiAsKatakana = savedKatakanaSetting === "true";
   }
+}
+
+function getSavedKanjiCardColumns() {
+  const savedColumns = Number(localStorage.getItem(SETTINGS_KEYS.kanjiCardColumns));
+
+  if (Number.isFinite(savedColumns) && savedColumns >= 1 && savedColumns <= 4) {
+    return savedColumns;
+  }
+
+  return 4;
+}
+
+function getSavedKanjiCardRows() {
+  const savedRows = Number(localStorage.getItem(SETTINGS_KEYS.kanjiCardRows));
+
+  if (Number.isFinite(savedRows) && savedRows >= 1 && savedRows <= 5) {
+    return savedRows;
+  }
+
+  return 4;
+}
+
+function setKanjiCardColumns(columns) {
+  const nextColumns = Math.min(4, Math.max(1, Number(columns)));
+  localStorage.setItem(SETTINGS_KEYS.kanjiCardColumns, String(nextColumns));
+  document.documentElement.style.setProperty("--kanji-card-columns", String(nextColumns));
+}
+
+function setKanjiCardRows(rows) {
+  const nextRows = Math.min(5, Math.max(1, Number(rows)));
+  localStorage.setItem(SETTINGS_KEYS.kanjiCardRows, String(nextRows));
+  document.documentElement.style.setProperty("--kanji-card-rows", String(nextRows));
+}
+
+function applySavedLayoutSettings() {
+  setKanjiCardColumns(getSavedKanjiCardColumns());
+  setKanjiCardRows(getSavedKanjiCardRows());
 }
 
 function getSavedLevel() {
@@ -299,6 +357,27 @@ function setupSettingsMenu() {
       Language: ${currentLang.toUpperCase()}
     </button>
 
+    <label class="settings-field">
+      <span>Kanji cards per row</span>
+      <select id="kanjiCardColumnsSelect">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </label>
+
+    <label class="settings-field">
+      <span>Kanji card rows on screen</span>
+      <select id="kanjiCardRowsSelect">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+      </select>
+    </label>
+
     <button id="settingsStartMainButton" type="button" class="settings-action-button">
       Start from main list
     </button>
@@ -343,6 +422,18 @@ function setupSettingsMenu() {
     resetSavedSession();
     panel.classList.add("hidden");
     button.setAttribute("aria-expanded", "false");
+  });
+
+  const kanjiCardColumnsSelect = panel.querySelector("#kanjiCardColumnsSelect");
+  kanjiCardColumnsSelect.value = String(getSavedKanjiCardColumns());
+  kanjiCardColumnsSelect.addEventListener("change", event => {
+    setKanjiCardColumns(event.target.value);
+  });
+
+  const kanjiCardRowsSelect = panel.querySelector("#kanjiCardRowsSelect");
+  kanjiCardRowsSelect.value = String(getSavedKanjiCardRows());
+  kanjiCardRowsSelect.addEventListener("change", event => {
+    setKanjiCardRows(event.target.value);
   });
 
   document.addEventListener("click", event => {

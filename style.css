@@ -9,6 +9,76 @@ html {
 :root {
   --app-header-height: 3.25rem;
   --sticky-gap: 0.5rem;
+  --kanji-card-columns: 4;
+  --kanji-card-rows: 4;
+}
+
+@keyframes panel-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.375rem) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menu-overlay-in {
+  from {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+
+  to {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+  }
+}
+
+@keyframes menu-panel-in {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes menu-overlay-out {
+  from {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+  }
+
+  to {
+    opacity: 0;
+    backdrop-filter: blur(0);
+  }
+}
+
+@keyframes menu-panel-out {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes panel-pop-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateY(-0.25rem) scale(0.98);
+  }
 }
 
 #kanjiSection,
@@ -53,6 +123,11 @@ header h1 {
 
 header button {
   padding: 0.5rem 0.75rem;
+  transition: background 160ms ease, border-color 160ms ease, transform 120ms ease, box-shadow 160ms ease;
+}
+
+button:active {
+  transform: scale(0.97);
 }
 
 .mobile-menu-button {
@@ -76,6 +151,7 @@ header button {
   z-index: 2000;
   background: rgba(0, 0, 0, 0.62);
   backdrop-filter: blur(4px);
+  animation: menu-overlay-in 180ms ease-out;
 }
 
 .mobile-menu-panel {
@@ -86,6 +162,15 @@ header button {
   background: #111827;
   border-right: 1px solid #374151;
   box-shadow: 24px 0 70px rgba(0, 0, 0, 0.5);
+  animation: menu-panel-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.mobile-menu-overlay.is-closing {
+  animation: menu-overlay-out 160ms ease-in forwards;
+}
+
+.mobile-menu-overlay.is-closing .mobile-menu-panel {
+  animation: menu-panel-out 180ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 .mobile-menu-header {
@@ -122,6 +207,12 @@ header button {
   border-radius: 1rem;
   background: #1f2937;
   border: 1px solid #374151;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.mobile-menu-section:focus-within {
+  border-color: #6b7280;
+  background: #202b3a;
 }
 
 .mobile-menu-section h3 {
@@ -198,6 +289,11 @@ header button {
   background: #374151;
   color: #ffffff;
   font-weight: 800;
+  transition: background 160ms ease, transform 120ms ease;
+}
+
+.mobile-menu-foldout-button:hover {
+  background: #4b5563;
 }
 
 .mobile-menu-foldout-button span span {
@@ -207,6 +303,12 @@ header button {
 
 .mobile-menu-foldout-content {
   margin-top: 1rem;
+  overflow: hidden;
+  animation: panel-pop-in 180ms ease-out;
+}
+
+.mobile-menu-foldout-content.is-closing {
+  animation: panel-pop-out 140ms ease-in forwards;
 }
 
 .header-nav {
@@ -264,6 +366,7 @@ header button {
   background: #111827;
   color: #ffffff;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  animation: panel-pop-in 160ms ease-out;
 }
 
 .header-search-results {
@@ -279,6 +382,7 @@ header button {
   border-radius: 1rem;
   background: #111827;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  animation: panel-pop-in 180ms ease-out;
 }
 
 .header-search-result {
@@ -355,6 +459,7 @@ header button {
   background: #111827;
   color: #ffffff;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  animation: panel-pop-in 160ms ease-out;
 }
 
 .settings-row {
@@ -371,6 +476,21 @@ header button {
   width: 1.125rem;
   height: 1.125rem;
   accent-color: #ec008c;
+}
+
+.settings-field {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.5rem;
+  color: #d1d5db;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.settings-field select {
+  width: 100%;
+  background: #374151;
+  color: #ffffff;
 }
 
 .settings-action-button {
@@ -1047,7 +1167,57 @@ input, select, button {
     scroll-margin-top: calc(var(--app-header-height) + 10.5rem);
   }
   .cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    --kanji-card-height: clamp(
+      5.25rem,
+      calc((100svh - var(--app-header-height) - 9.5rem) / var(--kanji-card-rows)),
+      12rem
+    );
+    padding: 0.5rem;
+    gap: 0.5rem;
+    grid-template-columns: repeat(var(--kanji-card-columns), minmax(0, 1fr));
+  }
+
+  .kanji-card {
+    height: var(--kanji-card-height);
+    min-height: 0;
+    border-radius: 0.75rem;
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .kanji-card-symbol {
+    min-height: 0;
+    font-size: clamp(1.75rem, 10vw, 3rem);
+  }
+
+  .kanji-card-body {
+    min-height: 0;
+    max-height: 4.5rem;
+    padding: 0.375rem 0.25rem 0.5rem;
+    overflow: hidden;
+  }
+
+  .kanji-card-level {
+    margin-bottom: 0.125rem;
+    font-size: 0.625rem;
+  }
+
+  .kanji-card-meaning {
+    font-size: clamp(0.6875rem, 2.8vw, 0.875rem);
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .kanji-card-reading {
+    margin-top: 0.25rem;
+    font-size: clamp(0.625rem, 2.5vw, 0.8125rem);
+    line-height: 1.15;
+  }
+
+  .kanji-card-reading-item {
+    margin: 0.0625rem;
+    padding: 0.0625rem 0.1875rem;
+    border-radius: 0.25rem;
   }
 
   .level-picker {
@@ -1284,6 +1454,21 @@ input, select, button {
   }
 }
 
+
+@media (max-width: 480px) and (max-height: 700px) {
+  .cards {
+    --kanji-card-height: clamp(
+      4.75rem,
+      calc((100svh - var(--app-header-height) - 8rem) / var(--kanji-card-rows)),
+      10rem
+    );
+  }
+
+  .kanji-card-body {
+    max-height: 3.75rem;
+  }
+}
+
 .radical-components {
   display: flex;
   flex-wrap: wrap;
@@ -1344,5 +1529,214 @@ input, select, button {
 
   .meaning-reading-layout .image-slot img {
     max-height: min(58vh, 620px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* Interaction polish: hover, press, release, and keyboard focus */
+button,
+.card,
+.image-slot img,
+.header-search-result,
+.settings-row {
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    opacity 160ms ease,
+    transform 120ms ease,
+    filter 120ms ease;
+}
+
+button {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button:hover,
+.card:hover,
+.image-slot img:hover,
+.header-search-result:hover,
+.settings-row:hover {
+  filter: brightness(1.08);
+}
+
+button:active,
+.card:active,
+.image-slot img:active,
+.header-search-result:active,
+.settings-row:active {
+  transform: scale(0.97);
+  filter: brightness(0.95);
+}
+
+.card:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+}
+
+.level-grid-button:active,
+.mobile-menu-level-button:active,
+.mobile-menu-nav-button:active,
+.settings-action-button:active,
+.kanji-switcher-button:active,
+.detail-navigation button:active {
+  transform: scale(0.95);
+}
+
+button:focus-visible,
+.card:focus-visible,
+.image-slot img:focus-visible,
+.header-search-result:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 3px;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+}
+
+/* Global interaction feedback for clickable UI */
+button,
+.card,
+.kanji-card,
+.radical-chip,
+.study-header-radical-chip,
+.image-slot img,
+.header-search-result,
+.settings-row,
+.level-grid-button,
+.mobile-menu-level-button,
+.mobile-menu-nav-button,
+.kanji-switcher-button,
+.detail-navigation button,
+.image-lightbox-close,
+.image-lightbox-nav {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    filter 160ms ease,
+    opacity 160ms ease,
+    transform 120ms ease;
+}
+
+button:hover,
+.card:hover,
+.kanji-card:hover,
+.radical-chip:hover,
+.study-header-radical-chip:hover,
+.image-slot img:hover,
+.header-search-result:hover,
+.settings-row:hover,
+.level-grid-button:hover,
+.mobile-menu-level-button:hover,
+.mobile-menu-nav-button:hover,
+.kanji-switcher-button:hover,
+.detail-navigation button:hover,
+.image-lightbox-close:hover,
+.image-lightbox-nav:hover {
+  filter: brightness(1.1);
+}
+
+button:active,
+.card:active,
+.kanji-card:active,
+.radical-chip:active,
+.study-header-radical-chip:active,
+.image-slot img:active,
+.header-search-result:active,
+.settings-row:active,
+.level-grid-button:active,
+.mobile-menu-level-button:active,
+.mobile-menu-nav-button:active,
+.kanji-switcher-button:active,
+.detail-navigation button:active,
+.image-lightbox-close:active,
+.image-lightbox-nav:active {
+  transform: translateY(1px) scale(0.97);
+  filter: brightness(0.92);
+}
+
+.kanji-switcher-button:hover {
+  background: #4b5563;
+  box-shadow: 0 0 0 1px #6b7280 inset, 0 10px 24px rgba(0, 0, 0, 0.25);
+}
+
+.kanji-switcher-button:active {
+  background: #2f3a4a;
+  box-shadow: 0 0 0 1px #9ca3af inset, 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+
+.kanji-card:hover {
+  transform: translateY(-2px);
+}
+
+.kanji-card:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.level-grid-button:hover,
+.mobile-menu-level-button:hover {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.14) inset;
+}
+
+.level-grid-button:active,
+.mobile-menu-level-button:active {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.24) inset;
+}
+
+.image-lightbox-nav:hover,
+.image-lightbox-close:hover {
+  background: rgba(55, 65, 81, 0.96);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+button:disabled,
+.kanji-switcher-button:disabled {
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+
+@media (hover: none) {
+  button:hover,
+  .card:hover,
+  .kanji-card:hover,
+  .radical-chip:hover,
+  .study-header-radical-chip:hover,
+  .image-slot img:hover,
+  .header-search-result:hover,
+  .settings-row:hover,
+  .level-grid-button:hover,
+  .mobile-menu-level-button:hover,
+  .mobile-menu-nav-button:hover,
+  .kanji-switcher-button:hover,
+  .detail-navigation button:hover,
+  .image-lightbox-close:hover,
+  .image-lightbox-nav:hover {
+    filter: none;
   }
 }
