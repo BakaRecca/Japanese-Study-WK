@@ -11,6 +11,15 @@ html {
   --sticky-gap: 0.5rem;
 }
 
+#kanjiSection,
+#radicalsSection,
+#meaningSection,
+#readingSection,
+#similarKanjiSection,
+#foundVocabularySection {
+  scroll-margin-top: calc(var(--app-header-height) + 9rem);
+}
+
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
@@ -206,6 +215,10 @@ input, select, button {
 
 .section-card {
   margin-top: 2rem;
+}
+
+.kanji-section {
+  margin-top: 0;
 }
 
 .image-slot {
@@ -563,6 +576,14 @@ input, select, button {
 }
 
 @media (max-width: 480px) {
+  #kanjiSection,
+  #radicalsSection,
+  #meaningSection,
+  #readingSection,
+  #similarKanjiSection,
+  #foundVocabularySection {
+    scroll-margin-top: calc(var(--app-header-height) + 10.5rem);
+  }
   .cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

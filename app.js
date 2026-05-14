@@ -125,6 +125,7 @@ function navigateKanji(direction) {
   }
 }
 
+
 function updateAppHeaderHeight() {
   const header = document.querySelector("header");
   if (!header) return;
@@ -133,18 +134,27 @@ function updateAppHeaderHeight() {
   document.documentElement.style.setProperty("--app-header-height", `${height}px`);
 }
 
+function getStickyContentOffset() {
+  const header = document.querySelector("header");
+  const studyHeader = document.querySelector(".study-header");
+  const rootStyles = getComputedStyle(document.documentElement);
+  const stickyGap = Number.parseFloat(rootStyles.getPropertyValue("--sticky-gap")) || 0;
+
+  const headerHeight = header?.getBoundingClientRect().height ?? 0;
+  const studyHeaderHeight = studyHeader?.getBoundingClientRect().height ?? 0;
+
+  return headerHeight + studyHeaderHeight + stickyGap + 16;
+}
+
 function getCurrentDetailSectionId() {
   const sectionIds = [
+    "kanjiSection",
     "radicalsSection",
     "meaningSection",
-    "readingsSection",
+    "readingSection",
     "similarKanjiSection",
     "foundVocabularySection"
   ];
-
-  const stickyOffset = Number.parseFloat(
-    getComputedStyle(document.documentElement).getPropertyValue("--app-header-height")
-  ) + 120;
 
   let currentSectionId = sectionIds[0];
 
@@ -153,8 +163,10 @@ function getCurrentDetailSectionId() {
     if (!section) continue;
 
     const sectionTop = section.getBoundingClientRect().top;
+    const scrollMarginTop = Number.parseFloat(getComputedStyle(section).scrollMarginTop) || getStickyContentOffset();
+    const activationLine = scrollMarginTop + 8;
 
-    if (sectionTop <= stickyOffset) {
+    if (sectionTop <= activationLine) {
       currentSectionId = sectionId;
     }
   }
@@ -419,16 +431,21 @@ function showDetail(subjectId, options = {}) {
   document.getElementById("detailView").classList.remove("hidden");
 
   document.getElementById("kanjiDetail").innerHTML = `
-    <div class="detail-header">
-      <div class="detail-symbol ${getSubjectColorClass(subject)}">
-        ${escapeHtml(subject.data.characters)}
-      </div>
+    <section id="kanjiSection" class="section-card kanji-section">
+      <h2 class="section-title">Kanji</h2>
+      <div class="divider"></div>
 
-      <div>
-        <div class="page-title">${escapeHtml(getMeaning(subject))}</div>
-        <p>Level ${subject.data.level} · ${escapeHtml(subject.object)}</p>
+      <div class="detail-header">
+        <div class="detail-symbol ${getSubjectColorClass(subject)}">
+          ${escapeHtml(subject.data.characters)}
+        </div>
+
+        <div>
+          <div class="page-title">${escapeHtml(getMeaning(subject))}</div>
+          <p>Level ${subject.data.level} · ${escapeHtml(subject.object)}</p>
+        </div>
       </div>
-    </div>
+    </section>
 
     ${renderStudyHeader(subject)}
 
@@ -447,12 +464,12 @@ function showDetail(subjectId, options = {}) {
     </div>
 
     <div class="detail-navigation">
-      <button onclick="scrollToDetailSection('radicalsSection')">Radicals</button>
+      <button onclick="scrollToDetailSection('kanjiSection')">Kanji</button>
+      <button onclick="scrollToDetailSection('radicalsSection')">Radical Combination</button>
       <button onclick="scrollToDetailSection('meaningSection')">Meaning</button>
-      <button onclick="scrollToDetailSection('readingsSection')">Readings</button>
-      <button onclick="scrollToDetailSection('similarKanjiSection')">Similar Kanji</button>
+      <button onclick="scrollToDetailSection('readingSection')">Reading</button>
+      <button onclick="scrollToDetailSection('similarKanjiSection')">Visual Similar Kanji</button>
       <button onclick="scrollToDetailSection('foundVocabularySection')">Found In Vocabulary</button>
-      <button onclick="scrollToDetailSection('imagesSection')">Images</button>
     </div>
 
     ${renderRadicalComponents(subject)}
@@ -486,8 +503,8 @@ function showDetail(subjectId, options = {}) {
       ${renderImageSlot(subject, "meaning", "Meaning mnemonic")}
     </section>
 
-    <section id="readingsSection" class="section-card">
-      <h2 class="section-title">Readings</h2>
+    <section id="readingSection" class="section-card">
+      <h2 class="section-title">Reading</h2>
       <div class="divider"></div>
 
       <div class="info-grid">
