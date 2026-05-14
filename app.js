@@ -6,6 +6,8 @@ let subjects = [];
 let currentLang = "en";
 let currentSubjectId = null;
 let touchStartX = 0;
+let lightboxImages = [];
+let lightboxImageIndex = 0;
 
 async function loadData() {
   const response = await fetch("data/wanikani-subjects.json");
@@ -116,10 +118,48 @@ function navigateKanji(direction) {
 
   const adjacent = getAdjacentKanji(currentSubjectId);
   const target = direction < 0 ? adjacent.previous : adjacent.next;
+  const currentSectionId = getCurrentDetailSectionId();
 
   if (target) {
-    showDetail(target.id);
+    showDetail(target.id, { scrollToSectionId: currentSectionId });
   }
+}
+
+function updateAppHeaderHeight() {
+  const header = document.querySelector("header");
+  if (!header) return;
+
+  const height = header.getBoundingClientRect().height;
+  document.documentElement.style.setProperty("--app-header-height", `${height}px`);
+}
+
+function getCurrentDetailSectionId() {
+  const sectionIds = [
+    "radicalsSection",
+    "meaningSection",
+    "readingsSection",
+    "similarKanjiSection",
+    "foundVocabularySection"
+  ];
+
+  const stickyOffset = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue("--app-header-height")
+  ) + 120;
+
+  let currentSectionId = sectionIds[0];
+
+  for (const sectionId of sectionIds) {
+    const section = document.getElementById(sectionId);
+    if (!section) continue;
+
+    const sectionTop = section.getBoundingClientRect().top;
+
+    if (sectionTop <= stickyOffset) {
+      currentSectionId = sectionId;
+    }
+  }
+
+  return currentSectionId;
 }
 
 function getRadicalComponents(subject) {
@@ -211,6 +251,21 @@ function getImagePath(subject, type) {
   return `assets/images/${currentLang}/kanji/${level}/${meaningSlug}-${type}.webp`;
 }
 
+function getSubjectImageGallery(subject) {
+  return [
+    {
+      type: "meaning",
+      label: "Meaning mnemonic",
+      path: getImagePath(subject, "meaning")
+    },
+    {
+      type: "reading",
+      label: "Reading mnemonic",
+      path: getImagePath(subject, "reading")
+    }
+  ];
+}
+
 function renderImageSlot(subject, type, label) {
   const imagePath = getImagePath(subject, type);
 
@@ -220,7 +275,7 @@ function renderImageSlot(subject, type, label) {
         src="${imagePath}"
         alt="${escapeHtml(label)} image for ${escapeHtml(getMeaning(subject))}"
         loading="lazy"
-        onclick="openImageLightbox('${imagePath}', '${escapeHtml(label)} image for ${escapeHtml(getMeaning(subject))}')"
+        onclick="openImageLightboxForSubject(${subject.id}, '${type}')"
         onerror="this.parentElement.classList.add('image-missing'); this.remove();"
       />
       <div class="image-fallback">
@@ -242,7 +297,10 @@ function ensureImageLightbox() {
   lightbox.className = "image-lightbox";
   lightbox.innerHTML = `
     <button class="image-lightbox-close" aria-label="Close image">×</button>
+    <button class="image-lightbox-nav image-lightbox-prev" aria-label="Previous image" onclick="event.stopPropagation(); navigateLightboxImage(-1)">‹</button>
     <img id="imageLightboxImage" alt="" />
+    <button class="image-lightbox-nav image-lightbox-next" aria-label="Next image" onclick="event.stopPropagation(); navigateLightboxImage(1)">›</button>
+    <div id="imageLightboxCounter" class="image-lightbox-counter"></div>
   `;
 
   lightbox.addEventListener("click", event => {
@@ -259,14 +317,44 @@ function ensureImageLightbox() {
   return lightbox;
 }
 
-function openImageLightbox(imagePath, altText) {
+function openImageLightboxForSubject(subjectId, type) {
+  const subject = subjects.find(s => s.id === subjectId);
+  if (!subject) return;
+
+  lightboxImages = getSubjectImageGallery(subject).map(image => ({
+    ...image,
+    alt: `${image.label} image for ${getMeaning(subject)}`
+  }));
+
+  lightboxImageIndex = Math.max(0, lightboxImages.findIndex(image => image.type === type));
+  openImageLightboxAtIndex(lightboxImageIndex);
+}
+
+function openImageLightboxAtIndex(index) {
+  if (lightboxImages.length === 0) return;
+
   const lightbox = ensureImageLightbox();
   const image = document.getElementById("imageLightboxImage");
+  const counter = document.getElementById("imageLightboxCounter");
+  const activeImage = lightboxImages[index];
 
-  image.src = imagePath;
-  image.alt = altText;
+  lightboxImageIndex = index;
+  image.src = activeImage.path;
+  image.alt = activeImage.alt;
+
+  if (counter) {
+    counter.textContent = `${activeImage.label} · ${index + 1} / ${lightboxImages.length}`;
+  }
+
   lightbox.classList.add("is-open");
   document.body.classList.add("lightbox-open");
+}
+
+function navigateLightboxImage(direction) {
+  if (lightboxImages.length <= 1) return;
+
+  const nextIndex = (lightboxImageIndex + direction + lightboxImages.length) % lightboxImages.length;
+  openImageLightboxAtIndex(nextIndex);
 }
 
 function closeImageLightbox() {
@@ -279,6 +367,8 @@ function closeImageLightbox() {
   document.body.classList.remove("lightbox-open");
   image.src = "";
   image.alt = "";
+  lightboxImages = [];
+  lightboxImageIndex = 0;
 }
 
 function escapeHtml(text) {
@@ -310,7 +400,7 @@ function showList() {
   document.getElementById("detailView").classList.add("hidden");
 }
 
-function showDetail(subjectId) {
+function showDetail(subjectId, options = {}) {
   const subject = subjects.find(s => s.id === subjectId);
   if (!subject) return;
 
@@ -327,7 +417,6 @@ function showDetail(subjectId) {
   document.getElementById("stats").classList.add("hidden");
   document.getElementById("listView").classList.add("hidden");
   document.getElementById("detailView").classList.remove("hidden");
-  window.scrollTo({ top: 0, behavior: "smooth" });
 
   document.getElementById("kanjiDetail").innerHTML = `
     <div class="detail-header">
@@ -443,11 +532,20 @@ function showDetail(subjectId) {
       <p>Coming next: vocabulary that uses this kanji.</p>
     </section>
   `;
+
+  requestAnimationFrame(() => {
+    if (options.scrollToSectionId) {
+      scrollToDetailSection(options.scrollToSectionId, "auto");
+      return;
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
 }
 
-function scrollToDetailSection(sectionId) {
+function scrollToDetailSection(sectionId, behavior = "smooth") {
   document.getElementById(sectionId)?.scrollIntoView({
-    behavior: "smooth",
+    behavior,
     block: "start"
   });
 }
@@ -510,8 +608,40 @@ document.getElementById("langToggle").addEventListener("click", () => {
 document.getElementById("backButton").addEventListener("click", showList);
 
 document.addEventListener("keydown", event => {
+  const lightbox = document.getElementById("imageLightbox");
+  const isLightboxOpen = lightbox?.classList.contains("is-open");
+
   if (event.key === "Escape") {
-    closeImageLightbox();
+    if (isLightboxOpen) {
+      closeImageLightbox();
+      return;
+    }
+
+    if (currentSubjectId) {
+      showList();
+    }
+
+    return;
+  }
+
+  if (!currentSubjectId) return;
+
+  if (event.key === "ArrowLeft") {
+    if (isLightboxOpen) {
+      navigateLightboxImage(-1);
+      return;
+    }
+
+    navigateKanji(-1);
+  }
+
+  if (event.key === "ArrowRight") {
+    if (isLightboxOpen) {
+      navigateLightboxImage(1);
+      return;
+    }
+
+    navigateKanji(1);
   }
 });
 
@@ -525,11 +655,22 @@ document.addEventListener("touchend", event => {
   const lightbox = document.getElementById("imageLightbox");
 
   if (detailView.classList.contains("hidden")) return;
-  if (lightbox?.classList.contains("is-open")) return;
 
   const touchEndX = event.changedTouches[0].screenX;
   const swipeDistance = touchEndX - touchStartX;
   const minimumSwipeDistance = 60;
+
+  if (lightbox?.classList.contains("is-open")) {
+    if (swipeDistance > minimumSwipeDistance) {
+      navigateLightboxImage(-1);
+    }
+
+    if (swipeDistance < -minimumSwipeDistance) {
+      navigateLightboxImage(1);
+    }
+
+    return;
+  }
 
   if (swipeDistance > minimumSwipeDistance) {
     navigateKanji(-1);
@@ -539,5 +680,11 @@ document.addEventListener("touchend", event => {
     navigateKanji(1);
   }
 });
+
+window.addEventListener("load", updateAppHeaderHeight);
+window.addEventListener("resize", updateAppHeaderHeight);
+window.addEventListener("orientationchange", updateAppHeaderHeight);
+
+updateAppHeaderHeight();
 
 loadData();
