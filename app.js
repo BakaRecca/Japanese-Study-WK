@@ -18,10 +18,20 @@ let touchStartX = 0;
 let lightboxImages = [];
 let lightboxImageIndex = 0;
 let showOnyomiAsKatakana = true;
+let showExtraReadings = true;
+let showLightboxStudyText = true;
+let showLightboxStudyHeader = true;
+let loopLightboxAcrossKanji = false;
+let loopLightboxAcrossLevels = false;
 
 const SETTINGS_KEYS = {
   level: "wk-study-current-level",
   onyomiAsKatakana: "wk-study-onyomi-as-katakana",
+  showExtraReadings: "wk-study-show-extra-readings",
+  lightboxStudyText: "wk-study-lightbox-study-text",
+  lightboxStudyHeader: "wk-study-lightbox-study-header",
+  loopLightboxAcrossKanji: "wk-study-loop-lightbox-across-kanji",
+  loopLightboxAcrossLevels: "wk-study-loop-lightbox-across-levels",
   kanjiCardColumns: "wk-study-kanji-card-columns",
   kanjiCardRows: "wk-study-kanji-card-rows",
   lastSubjectId: "wk-study-last-subject-id",
@@ -227,9 +237,34 @@ function updateHeaderLayoutMode() {
 
 function loadSettings() {
   const savedKatakanaSetting = localStorage.getItem(SETTINGS_KEYS.onyomiAsKatakana);
+  const savedExtraReadingsSetting = localStorage.getItem(SETTINGS_KEYS.showExtraReadings);
+  const savedLightboxStudyTextSetting = localStorage.getItem(SETTINGS_KEYS.lightboxStudyText);
+  const savedLightboxStudyHeaderSetting = localStorage.getItem(SETTINGS_KEYS.lightboxStudyHeader);
+  const savedLoopLightboxAcrossKanjiSetting = localStorage.getItem(SETTINGS_KEYS.loopLightboxAcrossKanji);
+  const savedLoopLightboxAcrossLevelsSetting = localStorage.getItem(SETTINGS_KEYS.loopLightboxAcrossLevels);
 
   if (savedKatakanaSetting !== null) {
     showOnyomiAsKatakana = savedKatakanaSetting === "true";
+  }
+
+  if (savedExtraReadingsSetting !== null) {
+    showExtraReadings = savedExtraReadingsSetting === "true";
+  }
+
+  if (savedLightboxStudyTextSetting !== null) {
+    showLightboxStudyText = savedLightboxStudyTextSetting === "true";
+  }
+
+  if (savedLightboxStudyHeaderSetting !== null) {
+    showLightboxStudyHeader = savedLightboxStudyHeaderSetting === "true";
+  }
+
+  if (savedLoopLightboxAcrossKanjiSetting !== null) {
+    loopLightboxAcrossKanji = savedLoopLightboxAcrossKanjiSetting === "true";
+  }
+
+  if (savedLoopLightboxAcrossLevelsSetting !== null) {
+    loopLightboxAcrossLevels = savedLoopLightboxAcrossLevelsSetting === "true";
   }
 }
 
@@ -353,6 +388,31 @@ function setupSettingsMenu() {
       <span>Show On’yomi as Katakana</span>
     </label>
 
+    <label class="settings-row">
+      <input id="extraReadingsToggle" type="checkbox" ${showExtraReadings ? "checked" : ""} />
+      <span>Show extra readings</span>
+    </label>
+
+    <label class="settings-row">
+      <input id="lightboxStudyHeaderToggle" type="checkbox" ${showLightboxStudyHeader ? "checked" : ""} />
+      <span>Show image viewer study header</span>
+    </label>
+
+    <label class="settings-row">
+      <input id="lightboxStudyTextToggle" type="checkbox" ${showLightboxStudyText ? "checked" : ""} />
+      <span>Show mnemonic text in image viewer</span>
+    </label>
+
+    <label class="settings-row">
+      <input id="loopLightboxAcrossKanjiToggle" type="checkbox" ${loopLightboxAcrossKanji ? "checked" : ""} />
+      <span>Swipe image viewer across kanji</span>
+    </label>
+
+    <label class="settings-row">
+      <input id="loopLightboxAcrossLevelsToggle" type="checkbox" ${loopLightboxAcrossLevels ? "checked" : ""} />
+      <span>Swipe image viewer across levels</span>
+    </label>
+
     <button id="settingsLanguageButton" type="button" class="settings-action-button">
       Language: ${currentLang.toUpperCase()}
     </button>
@@ -404,6 +464,39 @@ function setupSettingsMenu() {
     }
 
     render();
+  });
+
+  panel.querySelector("#extraReadingsToggle").addEventListener("change", event => {
+    showExtraReadings = event.target.checked;
+    localStorage.setItem(SETTINGS_KEYS.showExtraReadings, String(showExtraReadings));
+    renderHeaderSearchResults();
+
+    if (currentSubjectId) {
+      showDetail(currentSubjectId);
+      return;
+    }
+
+    render();
+  });
+
+  panel.querySelector("#lightboxStudyTextToggle").addEventListener("change", event => {
+    showLightboxStudyText = event.target.checked;
+    localStorage.setItem(SETTINGS_KEYS.lightboxStudyText, String(showLightboxStudyText));
+  });
+
+  panel.querySelector("#lightboxStudyHeaderToggle").addEventListener("change", event => {
+    showLightboxStudyHeader = event.target.checked;
+    localStorage.setItem(SETTINGS_KEYS.lightboxStudyHeader, String(showLightboxStudyHeader));
+  });
+
+  panel.querySelector("#loopLightboxAcrossKanjiToggle").addEventListener("change", event => {
+    loopLightboxAcrossKanji = event.target.checked;
+    localStorage.setItem(SETTINGS_KEYS.loopLightboxAcrossKanji, String(loopLightboxAcrossKanji));
+  });
+
+  panel.querySelector("#loopLightboxAcrossLevelsToggle").addEventListener("change", event => {
+    loopLightboxAcrossLevels = event.target.checked;
+    localStorage.setItem(SETTINGS_KEYS.loopLightboxAcrossLevels, String(loopLightboxAcrossLevels));
   });
 
   panel.querySelector("#settingsLanguageButton").addEventListener("click", () => {
@@ -591,8 +684,22 @@ function renderHeaderSearchResults() {
       <button type="button" class="header-search-result" onclick="selectSearchResult(${subject.id})">
         <span class="header-search-result-kanji">${escapeHtml(subject.data.characters)}</span>
         <span class="header-search-result-main">
-          <strong>${escapeHtml(getMeaning(subject))}</strong>
-          <small>Level ${subject.data.level} · ${renderCardReadings(subject)}</small>
+          <span class="header-search-result-level">Level ${subject.data.level}</span>
+          <span class="header-search-result-readings">
+            ${(() => {
+              const readings = subject.data.readings ?? [];
+              const primaryReadings = sortReadingsForCard(readings.filter(reading => reading.primary));
+              const secondaryReadings = showExtraReadings
+                ? sortReadingsForCard(readings.filter(reading => !reading.primary))
+                : [];
+
+              return `
+                ${renderCardReadingGroup(primaryReadings, "kanji-card-primary-reading")}
+                <strong>${escapeHtml(getMeaning(subject))}</strong>
+                ${renderCardReadingGroup(secondaryReadings, "kanji-card-secondary-readings")}
+              `;
+            })()}
+          </span>
         </span>
       </button>
     `).join("")
@@ -740,17 +847,54 @@ function renderReadingList(readings, type) {
   }).join(", ");
 }
 
-function renderCardReadings(subject) {
-  return subject.data.readings?.map(reading => {
-    const className = reading.primary ? "kanji-card-reading-item is-primary" : "kanji-card-reading-item";
+function sortReadingsForCard(readings) {
+  const typeOrder = {
+    onyomi: 0,
+    kunyomi: 1,
+    nanori: 2
+  };
+
+  return [...readings].sort((a, b) => {
+    const typeDifference = (typeOrder[a.type] ?? 99) - (typeOrder[b.type] ?? 99);
+    if (typeDifference !== 0) return typeDifference;
+    return a.reading.localeCompare(b.reading, "ja");
+  });
+}
+
+function renderCardReadingGroup(readings, className) {
+  if (readings.length === 0) return "";
+
+  const items = readings.map((reading, index) => {
     const displayReading = formatReadingForDisplay(reading.reading, reading.type);
-    return `<span class="${className}">${escapeHtml(displayReading)}</span>`;
-  }).join(" ") ?? "";
+    const separator = index < readings.length - 1 ? ",&nbsp;" : "";
+    return `<span class="kanji-card-reading-item">${escapeHtml(displayReading)}${separator}</span>`;
+  }).join("");
+
+  return `<div class="${className}">${items}</div>`;
+}
+
+function renderCardReadings(subject) {
+  const readings = subject.data.readings ?? [];
+  const primaryReadings = sortReadingsForCard(readings.filter(reading => reading.primary));
+  const secondaryReadings = showExtraReadings
+    ? sortReadingsForCard(readings.filter(reading => !reading.primary))
+    : [];
+
+  return `
+    ${renderCardReadingGroup(primaryReadings, "kanji-card-primary-reading")}
+    ${renderCardReadingGroup(secondaryReadings, "kanji-card-secondary-readings")}
+  `;
 }
 
 function getSubjectColorClass(subject) {
   if (subject.object === "radical") return "detail-symbol-radical";
   if (subject.object === "kanji") return "detail-symbol-kanji";
+  return "detail-symbol-vocabulary";
+}
+
+function getSubjectColorClassByType(type) {
+  if (type === "radical") return "detail-symbol-radical";
+  if (type === "kanji") return "detail-symbol-kanji";
   return "detail-symbol-vocabulary";
 }
 
@@ -922,31 +1066,30 @@ function renderRadicalComponents(subject) {
 
 function getPrimaryReadings(subject) {
   return subject.data.readings
-    ?.filter(reading => reading.primary)
-    .map(reading => reading.reading) ?? [];
+    ?.filter(reading => reading.primary) ?? [];
 }
 
 function renderStudyHeader(subject) {
   const radicals = getRadicalComponents(subject);
-  const primaryReadings = getPrimaryReadings(subject);
+  const primaryReadings = sortReadingsForCard(getPrimaryReadings(subject));
 
   return `
-    <div class="study-header">
-      <div class="study-header-kanji ${getSubjectColorClass(subject)}">
+    <div class="study-header ${radicals.length <= 3 ? "study-header-can-inline-radicals" : "study-header-stack-radicals"}">
+      <button type="button" class="study-header-kanji ${getSubjectColorClass(subject)}" onclick="openSymbolLightbox('${escapeHtml(subject.data.characters)}', '${escapeHtml(getMeaning(subject))}', 'kanji')">
         ${escapeHtml(subject.data.characters)}
-      </div>
+      </button>
 
       <div class="study-header-main">
         <div class="study-header-meaning">${escapeHtml(getMeaning(subject))}</div>
-        <div class="study-header-reading">${primaryReadings.length ? primaryReadings.map(escapeHtml).join(", ") : "No primary reading"}</div>
+        <div class="study-header-reading">${primaryReadings.length ? primaryReadings.map(reading => escapeHtml(formatReadingForDisplay(reading.reading, reading.type))).join(",&nbsp;") : "No primary reading"}</div>
       </div>
 
       <div class="study-header-radicals" aria-label="Radicals">
         ${radicals.map(radical => `
           <div class="study-header-radical-chip" title="${escapeHtml(getMeaning(radical))}">
-            <span class="study-header-radical-symbol">
+            <button type="button" class="study-header-radical-symbol" onclick="openSymbolLightbox('${escapeHtml(radical.data.characters ?? "?")}', '${escapeHtml(getMeaning(radical))}', 'radical')">
               ${escapeHtml(radical.data.characters ?? "?")}
-            </span>
+            </button>
             <span class="study-header-radical-name">
               ${escapeHtml(getMeaning(radical))}
             </span>
@@ -976,11 +1119,13 @@ function getImagePath(subject, type) {
 function getSubjectImageGallery(subject) {
   return [
     {
+      subjectId: subject.id,
       type: "meaning",
       label: "Meaning mnemonic",
       path: getImagePath(subject, "meaning")
     },
     {
+      subjectId: subject.id,
       type: "reading",
       label: "Reading mnemonic",
       path: getImagePath(subject, "reading")
@@ -1009,6 +1154,119 @@ function renderImageSlot(subject, type, label) {
   `;
 }
 
+function getLightboxStudyText(subject, type) {
+  if (!subject || !showLightboxStudyText) return "";
+
+  const isReading = type === "reading";
+  const mnemonic = isReading ? subject.data.reading_mnemonic : subject.data.meaning_mnemonic;
+  const hint = isReading
+    ? subject.data.reading_hint ?? "No reading hint available yet."
+    : subject.data.meaning_hint ?? "No meaning hint available yet.";
+
+  return `
+    <section class="image-lightbox-study-text">
+      <p>${renderWaniKaniText(mnemonic)}</p>
+      <details class="image-lightbox-hint" open>
+        <summary>Hints</summary>
+        <p>${renderWaniKaniText(hint)}</p>
+      </details>
+    </section>
+  `;
+}
+
+function getLightboxStudyHeader(subject, type) {
+  if (!subject) return "";
+
+  const radicals = getRadicalComponents(subject);
+  const primaryReadings = sortReadingsForCard(getPrimaryReadings(subject));
+  const primaryReadingText = primaryReadings.length
+    ? primaryReadings.map(reading => escapeHtml(formatReadingForDisplay(reading.reading, reading.type))).join(",&nbsp;")
+    : "No primary reading";
+
+  if (type === "reading") {
+    return `
+      <section class="image-lightbox-study-header image-lightbox-study-header-reading">
+        <button type="button" class="image-lightbox-kanji ${getSubjectColorClass(subject)}" onclick="openSymbolLightbox('${escapeHtml(subject.data.characters)}', '${escapeHtml(getMeaning(subject))}', 'kanji')">${escapeHtml(subject.data.characters)}</button>
+        <div class="image-lightbox-header-main">
+          <div class="image-lightbox-header-label">Reading</div>
+          <div class="image-lightbox-header-reading">${primaryReadingText}</div>
+        </div>
+      </section>
+    `;
+  }
+
+  return `
+    <section class="image-lightbox-study-header image-lightbox-study-header-meaning">
+      <button type="button" class="image-lightbox-kanji ${getSubjectColorClass(subject)}" onclick="openSymbolLightbox('${escapeHtml(subject.data.characters)}', '${escapeHtml(getMeaning(subject))}', 'kanji')">${escapeHtml(subject.data.characters)}</button>
+      <div class="image-lightbox-header-main">
+        <div class="image-lightbox-header-label">Meaning</div>
+        <div class="image-lightbox-header-meaning">${escapeHtml(getMeaning(subject))}</div>
+      </div>
+      <div class="image-lightbox-radicals" aria-label="Radicals">
+        ${radicals.map(radical => `
+          <div class="image-lightbox-radical-chip" title="${escapeHtml(getMeaning(radical))}">
+            <button type="button" class="image-lightbox-radical-symbol" onclick="openSymbolLightbox('${escapeHtml(radical.data.characters ?? "?")}', '${escapeHtml(getMeaning(radical))}', 'radical')">${escapeHtml(radical.data.characters ?? "?")}</button>
+            <span class="image-lightbox-radical-name">${escapeHtml(getMeaning(radical))}</span>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function ensureSymbolLightbox() {
+  let lightbox = document.getElementById("symbolLightbox");
+
+  if (lightbox) return lightbox;
+
+  lightbox = document.createElement("div");
+  lightbox.id = "symbolLightbox";
+  lightbox.className = "symbol-lightbox";
+  lightbox.innerHTML = `
+    <button class="symbol-lightbox-close" aria-label="Close symbol">×</button>
+    <div id="symbolLightboxCard" class="symbol-lightbox-card">
+      <div id="symbolLightboxCharacter" class="symbol-lightbox-character"></div>
+      <div id="symbolLightboxLabel" class="symbol-lightbox-label"></div>
+    </div>
+  `;
+
+  lightbox.addEventListener("click", event => {
+    if (
+      event.target.id === "symbolLightbox" ||
+      event.target.classList.contains("symbol-lightbox-close")
+    ) {
+      closeSymbolLightbox();
+    }
+  });
+
+  document.body.appendChild(lightbox);
+  return lightbox;
+}
+
+function openSymbolLightbox(character, label, type = "kanji") {
+  const lightbox = ensureSymbolLightbox();
+  const characterElement = document.getElementById("symbolLightboxCharacter");
+  const labelElement = document.getElementById("symbolLightboxLabel");
+
+  if (!characterElement || !labelElement) return;
+
+  characterElement.className = `symbol-lightbox-character ${getSubjectColorClassByType(type)}`;
+  characterElement.textContent = character || "?";
+  labelElement.textContent = label || "";
+
+  lightbox.classList.add("is-open");
+  document.body.classList.add("symbol-lightbox-open");
+}
+
+function closeSymbolLightbox() {
+  const lightbox = document.getElementById("symbolLightbox");
+
+  if (!lightbox) return;
+
+  lightbox.classList.remove("is-open");
+  document.body.classList.remove("symbol-lightbox-open");
+}
+
 function ensureImageLightbox() {
   let lightbox = document.getElementById("imageLightbox");
 
@@ -1019,17 +1277,18 @@ function ensureImageLightbox() {
   lightbox.className = "image-lightbox";
   lightbox.innerHTML = `
     <button class="image-lightbox-close" aria-label="Close image">×</button>
+    <div id="imageLightboxStudyHeader" class="image-lightbox-study-header-wrap"></div>
     <button class="image-lightbox-nav image-lightbox-prev" aria-label="Previous image" onclick="event.stopPropagation(); navigateLightboxImage(-1)">‹</button>
     <img id="imageLightboxImage" alt="" />
     <button class="image-lightbox-nav image-lightbox-next" aria-label="Next image" onclick="event.stopPropagation(); navigateLightboxImage(1)">›</button>
+    <div id="imageLightboxStudyText" class="image-lightbox-study-text-wrap"></div>
     <div id="imageLightboxCounter" class="image-lightbox-counter"></div>
   `;
 
   lightbox.addEventListener("click", event => {
     if (
       event.target.id === "imageLightbox" ||
-      event.target.classList.contains("image-lightbox-close") ||
-      event.target.id === "imageLightboxImage"
+      event.target.classList.contains("image-lightbox-close")
     ) {
       closeImageLightbox();
     }
@@ -1052,17 +1311,82 @@ function openImageLightboxForSubject(subjectId, type) {
   openImageLightboxAtIndex(lightboxImageIndex);
 }
 
+function getLightboxKanjiSequence() {
+  const rawSearch = document.getElementById("search").value.trim();
+
+  if (rawSearch || !loopLightboxAcrossLevels) {
+    return getCurrentKanjiList();
+  }
+
+  return subjects
+    .filter(subject =>
+      subject.object === "kanji" &&
+      subject.data.hidden_at === null
+    )
+    .sort((a, b) => {
+      if (a.data.level !== b.data.level) return a.data.level - b.data.level;
+      return getMeaning(a).localeCompare(getMeaning(b));
+    });
+}
+
+function openAdjacentKanjiInLightbox(direction) {
+  if (!loopLightboxAcrossKanji || lightboxImages.length === 0) return false;
+
+  const activeImage = lightboxImages[lightboxImageIndex];
+  const activeSubjectId = activeImage?.subjectId;
+  const sequence = getLightboxKanjiSequence();
+  const currentIndex = sequence.findIndex(subject => subject.id === activeSubjectId);
+
+  if (currentIndex < 0) return false;
+
+  const targetIndex = currentIndex + direction;
+  const targetSubject = sequence[targetIndex];
+
+  if (!targetSubject) return false;
+
+  currentSubjectId = targetSubject.id;
+  saveSessionView("detail", targetSubject.id);
+  showDetail(targetSubject.id);
+
+  lightboxImages = getSubjectImageGallery(targetSubject).map(image => ({
+    ...image,
+    alt: `${image.label} image for ${getMeaning(targetSubject)}`
+  }));
+
+  const targetImageType = direction > 0 ? "meaning" : "reading";
+  const targetImageIndex = Math.max(0, lightboxImages.findIndex(image => image.type === targetImageType));
+  openImageLightboxAtIndex(targetImageIndex);
+  return true;
+}
+
 function openImageLightboxAtIndex(index) {
   if (lightboxImages.length === 0) return;
 
   const lightbox = ensureImageLightbox();
   const image = document.getElementById("imageLightboxImage");
   const counter = document.getElementById("imageLightboxCounter");
+  const studyHeader = document.getElementById("imageLightboxStudyHeader");
+  const studyText = document.getElementById("imageLightboxStudyText");
   const activeImage = lightboxImages[index];
+  const activeSubject = subjects.find(subject => subject.id === activeImage.subjectId);
 
   lightboxImageIndex = index;
   image.src = activeImage.path;
   image.alt = activeImage.alt;
+
+  if (studyHeader) {
+    studyHeader.innerHTML = showLightboxStudyHeader ? getLightboxStudyHeader(activeSubject, activeImage.type) : "";
+    studyHeader.classList.toggle("hidden", !showLightboxStudyHeader);
+  }
+
+  if (studyText) {
+    studyText.innerHTML = getLightboxStudyText(activeSubject, activeImage.type);
+    studyText.classList.toggle("hidden", !showLightboxStudyText);
+  }
+
+  lightbox.classList.toggle("has-study-text", showLightboxStudyText);
+  lightbox.classList.toggle("has-study-header", showLightboxStudyHeader);
+  lightbox.classList.toggle("image-only", !showLightboxStudyText && !showLightboxStudyHeader);
 
   if (counter) {
     counter.textContent = `${activeImage.label} · ${index + 1} / ${lightboxImages.length}`;
@@ -1075,20 +1399,40 @@ function openImageLightboxAtIndex(index) {
 function navigateLightboxImage(direction) {
   if (lightboxImages.length <= 1) return;
 
-  const nextIndex = (lightboxImageIndex + direction + lightboxImages.length) % lightboxImages.length;
-  openImageLightboxAtIndex(nextIndex);
+  const nextIndex = lightboxImageIndex + direction;
+
+  if (nextIndex >= 0 && nextIndex < lightboxImages.length) {
+    openImageLightboxAtIndex(nextIndex);
+    return;
+  }
+
+  if (openAdjacentKanjiInLightbox(direction)) return;
+
+  const wrappedIndex = (nextIndex + lightboxImages.length) % lightboxImages.length;
+  openImageLightboxAtIndex(wrappedIndex);
 }
 
 function closeImageLightbox() {
   const lightbox = document.getElementById("imageLightbox");
   const image = document.getElementById("imageLightboxImage");
+  const studyHeader = document.getElementById("imageLightboxStudyHeader");
+  const studyText = document.getElementById("imageLightboxStudyText");
 
   if (!lightbox || !image) return;
 
-  lightbox.classList.remove("is-open");
+  lightbox.classList.remove("is-open", "has-study-text", "has-study-header", "image-only");
   document.body.classList.remove("lightbox-open");
   image.src = "";
   image.alt = "";
+
+  if (studyHeader) {
+    studyHeader.innerHTML = "";
+  }
+
+  if (studyText) {
+    studyText.innerHTML = "";
+    studyText.classList.add("hidden");
+  }
   lightboxImages = [];
   lightboxImageIndex = 0;
 }
@@ -1308,9 +1652,9 @@ function render() {
     <article class="card kanji-card" onclick="showDetail(${s.id})">
       <div class="kanji-card-symbol">${escapeHtml(s.data.characters)}</div>
       <div class="kanji-card-body">
-        <div class="kanji-card-level">Level ${s.data.level}</div>
-        <div class="kanji-card-meaning">${escapeHtml(getMeaning(s))}</div>
+        ${search ? `<div class="kanji-card-level">Level ${s.data.level}</div>` : ""}
         <div class="kanji-card-reading">${renderCardReadings(s)}</div>
+        <div class="kanji-card-meaning">${escapeHtml(getMeaning(s))}</div>
       </div>
     </article>
   `).join("");
@@ -1341,6 +1685,14 @@ document.addEventListener("keydown", event => {
 
     if (mobileMenuOpen) {
       closeMobileMenu();
+      return;
+    }
+
+    const symbolLightbox = document.getElementById("symbolLightbox");
+    const isSymbolLightboxOpen = symbolLightbox?.classList.contains("is-open");
+
+    if (isSymbolLightboxOpen) {
+      closeSymbolLightbox();
       return;
     }
 
