@@ -15,6 +15,48 @@ html {
   --font-family-japanese: "Noto Sans JP", "Noto Sans", "Noto Sans SC", system-ui, -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
   --jp-symbol-font-weight: 400;
   --jp-reading-font-weight: 400;
+
+  --text-shadow-dark: 0 1px 0 var(--color-text-shadow-dark);
+  --color-text-shadow-dark: rgba(0, 0, 0, 0.2);
+  --color-text-shadow-light: #FFF;
+  --color-hint-background: #E7E9EB;
+  --color-blue: #00AAFF;
+  --color-blue-dark: #0069AC;
+  --color-blue-light: #CBEBFF;
+  --color-pink: #FF00AA;
+  --color-pink-dark: #B9007B;
+  --color-pink-light: #FFD4F1;
+  --color-purple: #AA00FF;
+  --color-purple-dark: #8600B9;
+  --color-purple-light: #EDC8FF;
+  --color-charcoal: #6B7079;
+  --color-charcoal-dark: #333333;
+  --color-charcoal-light: #CAD0D6;
+
+  --text-highlight-box-shadow: 0 -2px 0 rgba(0, 0, 0, 0.2) inset;
+  --text-highlight-text-shadow: var(--text-shadow-dark);
+  
+  /* --color-text-highlight-radical-background: var(--color-blue-light);
+  --color-text-highlight-radical-text: var(--color-blue-dark);
+  --color-text-highlight-kanji-background: var(--color-pink-light);
+  --color-text-highlight-kanji-text: var(--color-pink-dark);
+  --color-text-highlight-vocabulary-background: var(--color-purple-light);
+  --color-text-highlight-vocabulary-text: var(--color-purple-dark);
+  --color-text-highlight-meaning-background: var(--color-charcoal-light);
+  --color-text-highlight-meaning-text: var(--color-charcoal-dark); */
+  --color-text-highlight-reading-background: var(--color-charcoal-light);
+  --color-text-highlight-reading-text: var(--color-charcoal-dark);
+
+  --color-text-highlight-radical-background: var(--color-blue-dark);
+  --color-text-highlight-radical-text: var(--color-blue-light);
+  --color-text-highlight-kanji-background: var(--color-pink-dark);
+  --color-text-highlight-kanji-text: var(--color-pink-light);
+  --color-text-highlight-vocabulary-background: var(--color-purple-dark);
+  --color-text-highlight-vocabulary-text: var(--color-purple-light);
+  --color-text-highlight-meaning-background: var(--color-charcoal-dark);
+  --color-text-highlight-meaning-text: var(--color-charcoal-light);
+  /* --color-text-highlight-reading-background: var(--color-charcoal-dark);
+  --color-text-highlight-reading-text: var(--color-charcoal-light); */
 }
 
 @keyframes panel-pop-in {
@@ -956,23 +998,31 @@ input, select, button {
 }
 
 .wk-tag-radical {
-  background: #0ea5e9;
-  color: #ffffff;
+  background: var(--color-text-highlight-radical-background);
+  color: var(--color-text-highlight-radical-text);
+  /* background: #0ea5e9;
+  color: #ffffff; */
 }
 
 .wk-tag-kanji {
-  background: #ec008c;
-  color: #ffffff;
+  background: var(--color-text-highlight-kanji-background);
+  color: var(--color-text-highlight-kanji-text);
+  /* background: #ec008c;
+  color: #ffffff; */
 }
 
 .wk-tag-vocabulary {
-  background: #a855f7;
-  color: #ffffff;
+  background: var(--color-text-highlight-vocabulary-background);
+  color: var(--color-text-highlight-vocabulary-text);
+  /* background: #a855f7;
+  color: #ffffff;  */
 }
 
 .wk-tag-reading {
-  background: #e5e7eb;
-  color: #111827;
+  background: var(--color-text-highlight-reading-background);
+  color: var(--color-text-highlight-reading-text);
+  /* background: #e5e7eb;
+  color: #111827; */
 }
 
 .page-title {
